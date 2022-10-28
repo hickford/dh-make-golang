@@ -44,6 +44,7 @@ func passthroughEnv() []string {
 		"NO_PROXY", "no_proxy",
 		"GIT_PROXY_COMMAND",
 		"GIT_HTTP_PROXY_AUTHMETHOD",
+		"AUTHORIZATION",
 	}
 	var result []string
 	for _, variable := range relevantVariables {
@@ -87,7 +88,14 @@ func downloadFile(filename, url string) error {
 	}
 	defer dst.Close()
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("get", url, nil)
+	if err != nil {
+		return fmt.Errorf("http NewRequest: %w", err)
+	}
+	if authorization, ok := os.LookupEnv("AUTHORIZATION"); ok {
+		req.Header.Add("Authorization", authorization)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("http get: %w", err)
 	}
